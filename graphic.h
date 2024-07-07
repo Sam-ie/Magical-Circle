@@ -8,6 +8,12 @@
 #include <QPainter>
 #include <QPen>
 
+struct Path
+{
+    QGraphicsPathItem* path;
+    int smooth=0;//0:path,1:smooth,2:circle
+};
+
 class Graphic : public QGraphicsView
 {
     Q_OBJECT
@@ -18,9 +24,19 @@ public:
     void updatePen(QString lineColor, QString lineStyle, QString lineThickness);
     void undo(); // 撤销上一次的绘制
     void redo(); // 重做撤销的操作
+    void smooth(); //曲线平滑
     QImage toQImage();
 
     QPen pen;
+    bool isPaintCircle=false;
+
+public slots:
+    void clearAll();
+
+signals:
+    void undoAvailableChanged(bool available);
+    void redoAvailableChanged(bool available);
+    void smoothAvailableChanged(bool available);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -29,11 +45,14 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 private:
+    QPainterPath smoothPathWithLengthPreservation(QPainterPath originalPath);
+    QPainterPath smoothPathWithMotionModel(QPainterPath originalPath);
+
     QGraphicsScene *m_scene;
-    QPointF m_startPos, m_lastPos;
-    QGraphicsPathItem *m_currentPathItem;
-    QList<QGraphicsPathItem*> m_drawnPaths; // 存储已绘制的路径
-    QList<QGraphicsPathItem*> m_undonePaths; // 存储撤销的路径
+    QPointF m_startPos;
+    QGraphicsPathItem *m_currentPathItem = nullptr;
+    QList<Path> m_drawnPaths; // 存储已绘制的路径
+    QList<Path> m_undonePaths; // 存储撤销的路径
 };
 
 #endif // GRAPHIC_H

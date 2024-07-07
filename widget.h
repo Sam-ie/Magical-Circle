@@ -29,17 +29,25 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 private slots:
-    void on_pushButton_clicked();
+    void on_pushButton_Windowed_clicked();
 
-    void on_pushButton_5_clicked();
+    void on_pushButton_Switch_Language_clicked();
 
-    void on_pushButton_9_clicked();
+    void on_pushButton_Quit_clicked();
 
-    void on_pushButton_2_clicked();
+    void on_pushButton_Undo_clicked();
 
-    void on_pushButton_3_clicked();
+    void on_pushButton_Redo_clicked();
 
-    void on_pushButton_4_clicked();
+    void on_pushButton_Smooth_clicked();
+
+    void on_pushButton_Circle_clicked();
+
+    void on_pushButton_Clear_clicked();
+
+    void on_pushButton_Import_clicked();
+
+    void on_pushButton_Export_clicked();
 
 private:
     void setComboBox();

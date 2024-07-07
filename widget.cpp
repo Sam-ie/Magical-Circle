@@ -11,6 +11,9 @@ Widget::Widget(QWidget *parent)
 
     showFullScreen();
 
+    ui->pushButton_Undo->setEnabled(false);
+    ui->pushButton_Redo->setEnabled(false);
+
     setComboBox();
     ui->comboBox->setCurrentText(tr("渐变"));
     ui->comboBox_2->setCurrentText(tr("实线"));
@@ -30,13 +33,17 @@ Widget::Widget(QWidget *parent)
 
     // 创建QShortcut对象，第一个参数是快捷键，第二个参数是父对象，第三个参数是槽函数
     QShortcut *shortcut1 = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Z), this);
-    connect(shortcut1, &QShortcut::activated, this, &Widget::on_pushButton_2_clicked);
+    connect(shortcut1, &QShortcut::activated, this, &Widget::on_pushButton_Undo_clicked);
 
     QShortcut *shortcut2 = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z), this);
-    connect(shortcut2, &QShortcut::activated, this, &Widget::on_pushButton_3_clicked);
+    connect(shortcut2, &QShortcut::activated, this, &Widget::on_pushButton_Redo_clicked);
 
     QShortcut *shortcut3 = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this);
-    connect(shortcut3, &QShortcut::activated, this, &Widget::on_pushButton_4_clicked);
+    connect(shortcut3, &QShortcut::activated, this, &Widget::on_pushButton_Export_clicked);
+
+    connect(graphic, &Graphic::undoAvailableChanged, ui->pushButton_Undo, &QPushButton::setEnabled);
+    connect(graphic, &Graphic::redoAvailableChanged, ui->pushButton_Redo, &QPushButton::setEnabled);
+    connect(graphic, &Graphic::smoothAvailableChanged, ui->pushButton_Smooth, &QPushButton::setEnabled);
 }
 
 Widget::~Widget()
@@ -84,7 +91,7 @@ void Widget::setComboBox()
     ui->comboBox_5->setCurrentText(currentOption);
 }
 
-void Widget::on_pushButton_clicked()
+void Widget::on_pushButton_Windowed_clicked()
 {
     if (isFullScreen()) {
         // 如果当前是全屏状态，切换到窗口化
@@ -95,10 +102,10 @@ void Widget::on_pushButton_clicked()
     }
     // 改变按钮文本
     isEnglish = !isEnglish;
-    on_pushButton_5_clicked();
+    on_pushButton_Switch_Language_clicked();
 }
 
-void Widget::on_pushButton_5_clicked()
+void Widget::on_pushButton_Switch_Language_clicked()
 {
     if (!isEnglish) {
         // 加载英文翻译文件
@@ -107,7 +114,7 @@ void Widget::on_pushButton_5_clicked()
         qApp->installTranslator(&translator);
         ui->retranslateUi(this);
         if (!isFullScreen()) {
-            ui->pushButton->setText(tr("全屏"));
+            ui->pushButton_Windowed->setText(tr("全屏"));
         }
         setComboBox();
     }
@@ -119,7 +126,7 @@ void Widget::on_pushButton_5_clicked()
         }
         ui->retranslateUi(this);
         if (!isFullScreen()) {
-            ui->pushButton->setText(tr("全屏"));
+            ui->pushButton_Windowed->setText(tr("全屏"));
         }
         setComboBox();
     }
@@ -128,50 +135,104 @@ void Widget::on_pushButton_5_clicked()
 
 
 
-void Widget::on_pushButton_9_clicked()
+void Widget::on_pushButton_Quit_clicked()
 {
     this->close();
 }
 
 
-void Widget::on_pushButton_2_clicked()
+void Widget::on_pushButton_Undo_clicked()
 {
     graphic->undo();
 }
 
 
-void Widget::on_pushButton_3_clicked()
+void Widget::on_pushButton_Redo_clicked()
 {
     graphic->redo();
 }
 
-void Widget::on_pushButton_4_clicked()
+void Widget::on_pushButton_Smooth_clicked()
 {
-    // 弹出一个文件保存对话框
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "", tr("PNG files (*.png)"));
+    graphic->smooth();
+}
+
+void Widget::on_pushButton_Circle_clicked()
+{
+    // 切换 graphic->isPaintCircle 的值与按钮的选中状态一致
+    graphic->isPaintCircle = ui->pushButton_Circle->isChecked();
+}
+
+void Widget::on_pushButton_Clear_clicked()
+{
+    graphic->clearAll();
+}
+
+void Widget::on_pushButton_Import_clicked()
+{
+    // 打开文件对话框，允许用户选择图片文件
+    QString fileName = QFileDialog::getOpenFileName(this, tr("导入图像"), "",
+                                                    "Images (*.png *.jpg *.jpeg *.JPG *.JPEG *.ico)");
+    if (!fileName.isEmpty()) {
+        // 读取图片
+        QPixmap pixmap(fileName);
+
+        if (!pixmap.isNull()) {
+            // 获取当前Graphic对象的大小
+            QSize graphicSize = graphic->size();
+
+            // 缩放图片以适应Graphic对象的大小
+            pixmap = pixmap.scaled(graphicSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+            // 清除原有的场景
+            graphic->scene()->clear();
+
+            // 在场景中添加新的缩放后的图片
+            QGraphicsPixmapItem *item = new QGraphicsPixmapItem(pixmap);
+            graphic->scene()->addItem(item);
+
+            // 确保图形视图适配新图片的大小
+            graphic->fitInView(item, Qt::KeepAspectRatio);
+        } else {
+            QMessageBox::critical(this, tr("错误"), tr("文件未能读取！"));
+        }
+    }
+}
+
+void Widget::on_pushButton_Export_clicked()
+{
+    // 弹出一个文件保存对话框，允许用户保存为多种格式
+    QString fileName = QFileDialog::getSaveFileName(this, tr("保存图像"), "",
+                                                    "PNG files (*.png);;JPEG files (*.jpg *.jpeg);;ICO files (*.ico);;All files (*)");
 
     if (!fileName.isEmpty())
     {
-        // 如果用户选择了文件名，我们将其保存为PNG文件
+        // 根据文件扩展名确定保存格式
+        QFileInfo fileInfo(fileName);
+        QString format = fileInfo.suffix().toLower();
+
+        // 如果用户选择了文件名，我们将其保存为相应格式的文件
         // 假设 graphic 是一个可以转换为 QImage 的对象
         QImage image = graphic->toQImage(); // 这里需要实现 graphic 对象到 QImage 的转换
 
-        // 确保文件名以 .png 结尾
-        if (!fileName.endsWith(".png"))
+        // 确保文件名有扩展名
+        if (format.isEmpty())
+        {
+            // 如果没有扩展名，默认保存为PNG
+            format = "png";
             fileName += ".png";
+        }
 
         // 尝试保存图像
-        bool saved = image.save(fileName);
+        bool saved = image.save(fileName, format.toLatin1().constData());
 
         if (saved)
         {
-            // 成功保存
-            QMessageBox::information(this, tr("Information"), tr("Image has been saved successfully."));
+            QMessageBox::information(this, tr("成功"), tr("文件已成功保存！"));
         }
         else
         {
-            // 保存失败
-            QMessageBox::critical(this, tr("Error"), tr("Failed to save the image."));
+            QMessageBox::critical(this, tr("错误"), tr("文件未能保存！"));
         }
     }
 }
@@ -188,3 +249,4 @@ void Widget::resizeEvent(QResizeEvent *event)
         graphic->setFixedSize(picSize, picSize);
     }
 }
+
