@@ -6,6 +6,7 @@
 #include <QTranslator>
 #include <QShortcut>
 #include <QFileDialog>
+#include <QColorDialog>
 #include <QFile>
 #include <QImage>
 #include <QMessageBox>
@@ -48,6 +49,16 @@ private slots:
     void on_pushButton_Import_clicked();
 
     void on_pushButton_Export_clicked();
+
+    void on_comboBox_LineColor_currentTextChanged(const QString &arg1);
+
+    void on_comboBox_LineStyle_currentTextChanged(const QString &arg1);
+
+    void on_comboBox_LineThickness_currentTextChanged(const QString &arg1);
+
+    void on_comboBox_BackgroundColor_currentTextChanged(const QString &arg1);
+
+    void on_comboBox_Axis_currentTextChanged(const QString &arg1);
 
 private:
     void setComboBox();

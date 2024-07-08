@@ -21,7 +21,9 @@ class Graphic : public QGraphicsView
 public:
     Graphic(QWidget *parent = nullptr);
 
-    void updatePen(QString lineColor, QString lineStyle, QString lineThickness);
+    void updatePen(QColor lineColor, QString lineStyle, QString lineThickness, QColor backgroundColor);
+    void setBackground(const QColor &backgroundColor);
+    void setAxis(int num);
     void undo(); // 撤销上一次的绘制
     void redo(); // 重做撤销的操作
     void smooth(); //曲线平滑
@@ -29,6 +31,9 @@ public:
 
     QPen pen;
     bool isPaintCircle=false;
+    bool isLineColorRandom=false;
+    QColor m_lineColor;
+    QColor m_backgroundColor;
 
 public slots:
     void clearAll();

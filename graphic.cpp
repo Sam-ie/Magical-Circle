@@ -7,26 +7,58 @@ Graphic::Graphic(QWidget *parent) : QGraphicsView(parent)
     setBackgroundBrush(Qt::black);
 }
 
-void Graphic::updatePen(QString lineColor, QString lineStyle, QString lineThickness)
+void Graphic::updatePen(QColor lineColor, QString lineStyle, QString lineThickness, QColor backgroundColor)
 {
     // 更新画笔的颜色
-    if (lineColor == "red")
-        pen.setColor(Qt::red);
-    else if (lineColor == "blue")
-        pen.setColor(Qt::blue);
-    // 其他颜色...
-    pen.setColor("white");
+    if (lineColor != QColor())
+    {
+        pen.setColor(lineColor);
+        m_lineColor=lineColor;
+    }
 
     // 更新画笔的风格
-    if (lineStyle == "solid")
+    if (lineStyle == "炫光" || lineStyle == "Glare")
+    {
         pen.setStyle(Qt::SolidLine);
-    else if (lineStyle == "dash")
-        pen.setStyle(Qt::DashLine);
-    // 其他风格...
+    }
+    else if (lineStyle == "实线" || lineStyle == "Solid Line")
+        pen.setStyle(Qt::SolidLine);
+    else if (lineStyle == "橡皮擦" || lineStyle == "Erase Line")
+        pen.setColor(m_backgroundColor);
 
     // 更新画笔的宽度
-    int thickness = lineThickness.toInt();
-    pen.setWidth(thickness);
+    if (lineThickness == "自定义" || lineThickness == "Customize")
+    {
+        pen.setStyle(Qt::SolidLine);
+    }
+    else
+    {
+        int thickness = lineThickness.toInt();
+        pen.setWidth(thickness);
+    }
+
+    // 更新背景的颜色
+    if (backgroundColor != QColor())
+    {
+        setBackground(backgroundColor);
+        m_backgroundColor=backgroundColor;
+    }
+
+    // 设置端点为圆帽
+    pen.setCapStyle(Qt::RoundCap);
+}
+
+void Graphic::setBackground(const QColor &backgroundColor)
+{
+    QGraphicsRectItem *backgroundRect = new QGraphicsRectItem(m_scene->sceneRect());
+    backgroundRect->setBrush(backgroundColor);
+    backgroundRect->setZValue(-1001);
+    m_scene->addItem(backgroundRect);
+}
+
+void Graphic::setAxis(int num)
+{
+
 }
 
 void Graphic::mousePressEvent(QMouseEvent *event)
@@ -107,7 +139,7 @@ void Graphic::undo()
         Path item = m_drawnPaths.takeLast();
         m_undonePaths.append(item);
         m_scene->removeItem(item.path);
-        if (item.smooth)
+        if (item.smooth==1)
             m_scene->addItem(m_drawnPaths.back().path);
     }
     if (m_drawnPaths.isEmpty())
@@ -130,7 +162,7 @@ void Graphic::redo()
 {
     if (!m_undonePaths.isEmpty()) {
         Path item = m_undonePaths.takeLast();
-        if (item.smooth)
+        if (item.smooth==1)
             m_scene->removeItem(m_drawnPaths.back().path);
         m_drawnPaths.append(item);
         m_scene->addItem(item.path);
